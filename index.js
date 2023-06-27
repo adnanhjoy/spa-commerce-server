@@ -11,7 +11,6 @@ app.use(express.json());
 
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.3cnsdha.mongodb.net/?retryWrites=true&w=majority`;
-console.log(uri)
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -27,11 +26,21 @@ async function run() {
         // Connect the client to the server	(optional starting in v4.7)
         await client.connect();
         // Send a ping to confirm a successful connection
-        await client.db("admin").command({ ping: 1 });
-        console.log("Pinged your deployment. You successfully connected to MongoDB!");
+        const productsCollection = client.db("emajhon").collection('products');
+
+        app.get('/products', async (req, res) => {
+            const page = parseInt(req.query.page);
+            const size = parseInt(req.query.size);
+            const query = {};
+            const cursor = productsCollection.find(query);
+            const count = await productsCollection.estimatedDocumentCount();
+            const products = await cursor.skip(page * size).limit(size).toArray();
+            res.send({ count, products });
+        })
+
     } finally {
         // Ensures that the client will close when you finish/error
-        await client.close();
+        // await client.close();
     }
 }
 run().catch(console.dir);
